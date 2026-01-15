@@ -1,7 +1,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/printk.h>
-#include "vtfs_init.h"
+#include "vtfs.h"
 
 #define MODULE_NAME "vtfs"
 

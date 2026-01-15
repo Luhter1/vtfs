@@ -1,10 +1,14 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/printk.h>
-#include "vtfs_init.h"
+#include "vtfs.h"
+
+const struct inode_operations vtfs_inode_ops = {
+  .lookup = vtfs_lookup,
+};
 
 // создает новую структуру inode для корня файловой системы
-struct inode* vtfs_get_inode(
+struct inode* vtfs_get_inode( 
   struct super_block* sb, 
   const struct inode* dir, 
   umode_t mode, 
@@ -16,6 +20,7 @@ struct inode* vtfs_get_inode(
 
   inode_init_owner(&nop_mnt_idmap, inode, dir, mode);
 
+  inode->i_op = &vtfs_inode_ops;
   inode->i_ino = i_ino;
   inode->i_sb  = sb;
 
@@ -24,7 +29,7 @@ struct inode* vtfs_get_inode(
 
 // заполняет структуру super_block инфой о файловой системе
 int vtfs_fill_super(struct super_block *sb, void *data, int silent) {
-  struct inode* inode = vtfs_get_inode(sb, NULL, S_IFDIR, 1000);
+  struct inode* inode = vtfs_get_inode(sb, NULL, S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO, 1000);
   sb->s_root = d_make_root(inode);
   if (sb->s_root == NULL) {
   return -ENOMEM;
