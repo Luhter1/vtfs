@@ -70,6 +70,11 @@ int vtfs_create(
 
   inode = vtfs_get_inode(parent_inode->i_sb, parent_inode,
                           new_entry->mode, new_entry->ino);
+  if(!inode){
+    list_del(&new_entry->list);
+    kfree(new_entry);
+    return -ENOMEM;
+  }
   inode->i_private = new_entry;
   inode->i_size = 0;
 
