@@ -9,6 +9,11 @@ const struct inode_operations vtfs_inode_ops = {
   .create = vtfs_create,
 };
 
+const struct inode_operations vtfs_file_inode_ops = {
+  .setattr = simple_setattr,
+  .getattr = simple_getattr,
+};
+
 const struct file_operations vtfs_dir_ops = {
   .owner = THIS_MODULE,
   .iterate_shared = vtfs_iterate,
@@ -37,7 +42,7 @@ struct inode* vtfs_get_inode(
       inode->i_op = &vtfs_inode_ops;
       inode->i_fop = &vtfs_dir_ops;
   } else if (S_ISREG(mode)) {
-      inode->i_op = NULL;
+      inode->i_op = &vtfs_file_inode_ops;
       inode->i_fop = &vtfs_file_ops;
   }
   inode->i_ino = i_ino;

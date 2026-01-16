@@ -44,23 +44,31 @@ struct dentry* vtfs_lookup(
 
 int vtfs_create(
   struct mnt_idmap *id,
-  struct inode *parent_inode, 
-  struct dentry *child_dentry, 
-  umode_t mode, 
+  struct inode *parent_inode,
+  struct dentry *child_dentry,
+  umode_t mode,
   bool b
 ) {
   struct vtfs_sb_info *sbi = parent_inode->i_sb->s_fs_info;
-  struct vtfs_entry *new_entry;
+  struct vtfs_entry *entry, *new_entry;
   struct inode *inode;
 
   if (!S_ISDIR(parent_inode->i_mode))
     return -ENOTDIR;
 
+  // Проверка на существование файла с таким же именем
+  list_for_each_entry(entry, &sbi->entries, list) {
+    if (strcmp(entry->name, child_dentry->d_name.name) == 0)
+      return -EEXIST;
+  }
+
   new_entry = kzalloc(sizeof(*new_entry), GFP_KERNEL);
   if (!new_entry)
     return -ENOMEM;
 
-  strncpy(new_entry->name, child_dentry->d_name.name, MAX_NAME_LEN);
+  // Безопасное копирование имени файла с гарантией завершения нулевым символом
+  strncpy(new_entry->name, child_dentry->d_name.name, MAX_NAME_LEN - 1);
+  new_entry->name[MAX_NAME_LEN - 1] = '\0';
   new_entry->mode = S_IFREG | mode;
   new_entry->ino = GLOB_INODE_COUNTER++;
   new_entry->data = NULL;
