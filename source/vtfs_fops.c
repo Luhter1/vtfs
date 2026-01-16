@@ -8,10 +8,13 @@
 // функция поочередно вызывается для каждого файла (увеличивая ctx->pos)
 int vtfs_iterate(struct file *filp, struct dir_context *ctx) {
   struct vtfs_entry *entry;
-  struct inode *inode = file_inode(filp); 
-  struct vtfs_sb_info *sbi = inode->i_sb->s_fs_info;
+  struct inode *inode = file_inode(filp);
+  struct vtfs_entry *dir_entry = inode->i_private;
   loff_t pos = ctx->pos;
   int i = 0;
+
+  if (!dir_entry)
+    return -ENOENT;
 
   if(ctx->pos == 0) {
     if(!dir_emit(ctx, ".", 1, inode->i_ino, DT_DIR))
@@ -31,7 +34,8 @@ int vtfs_iterate(struct file *filp, struct dir_context *ctx) {
     pos++;
   }
 
-  list_for_each_entry(entry, &sbi->entries, list){
+  // Итерируем по children текущей директории
+  list_for_each_entry(entry, &dir_entry->children, list){
     if(i++ < pos - 2)
         continue;
 

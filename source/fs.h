@@ -11,12 +11,16 @@ struct vtfs_entry {
     umode_t mode;
     ino_t ino;
     struct list_head list;
+    struct vtfs_entry *parent;
+    struct list_head children;
     char *data;
     size_t size;
+    atomic_t refcount; 
+    struct vtfs_entry *target;
 };
 
 struct vtfs_sb_info {
-    struct list_head entries;
+    struct vtfs_entry *root_entry;
 };
 
 
