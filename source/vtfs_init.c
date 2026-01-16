@@ -55,25 +55,45 @@ struct inode* vtfs_get_inode(
 // заполняет структуру super_block инфой о файловой системе
 int vtfs_fill_super(struct super_block *sb, void *data, int silent) {
   struct vtfs_sb_info *sbi;
+  struct vtfs_entry *root_entry;
   struct inode *root_inode;
 
   sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
   if (!sbi)
       return -ENOMEM;
 
-  INIT_LIST_HEAD(&sbi->entries);
+  // Создаем корневую директорию
+  root_entry = kzalloc(sizeof(*root_entry), GFP_KERNEL);
+  if (!root_entry) {
+    kfree(sbi);
+    return -ENOMEM;
+  }
 
-  // struct vtfs_entry *e = kzalloc(sizeof(*e), GFP_KERNEL);
-  // strcpy(e->name, "test.txt");
-  // e->mode = S_IFREG | 0755;
-  // e->ino  = 1001;
-  // list_add(&e->list, &sbi->entries);
+  strcpy(root_entry->name, "/");
+  root_entry->mode = S_IFDIR | 0777;
+  root_entry->ino = 1000;
+  root_entry->parent = NULL;
+  root_entry->data = NULL;
+  root_entry->size = 0;
+  root_entry->target = NULL;
+  INIT_LIST_HEAD(&root_entry->children);
+  atomic_set(&root_entry->refcount, 1);
 
+  sbi->root_entry = root_entry;
   sb->s_fs_info = sbi;
 
   root_inode = vtfs_get_inode(sb, NULL, S_IFDIR | 0777, 1000);
+  if (!root_inode) {
+    kfree(root_entry);
+    kfree(sbi);
+    return -ENOMEM;
+  }
+  root_inode->i_private = root_entry;
+  
   sb->s_root = d_make_root(root_inode);
   if (sb->s_root == NULL) {
+    kfree(root_entry);
+    kfree(sbi);
     return -ENOMEM;
   }
   return 0;
