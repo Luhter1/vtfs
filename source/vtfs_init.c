@@ -2,9 +2,15 @@
 #include <linux/module.h>
 #include <linux/printk.h>
 #include "vtfs.h"
+#include "fs.h"
 
 const struct inode_operations vtfs_inode_ops = {
   .lookup = vtfs_lookup,
+};
+
+const struct file_operations vtfs_dir_ops = {
+  .owner = THIS_MODULE,
+  .iterate_shared = vtfs_iterate,
 };
 
 // создает новую структуру inode для корня файловой системы
@@ -21,6 +27,7 @@ struct inode* vtfs_get_inode(
   inode_init_owner(&nop_mnt_idmap, inode, dir, mode);
 
   inode->i_op = &vtfs_inode_ops;
+  inode->i_fop = &vtfs_dir_ops;
   inode->i_ino = i_ino;
   inode->i_sb  = sb;
 
@@ -29,12 +36,28 @@ struct inode* vtfs_get_inode(
 
 // заполняет структуру super_block инфой о файловой системе
 int vtfs_fill_super(struct super_block *sb, void *data, int silent) {
-  struct inode* inode = vtfs_get_inode(sb, NULL, S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO, 1000);
-  sb->s_root = d_make_root(inode);
+  struct vtfs_sb_info *sbi;
+  struct inode *root_inode;
+
+  sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+  if (!sbi)
+      return -ENOMEM;
+
+  INIT_LIST_HEAD(&sbi->entries);
+
+  // struct vtfs_entry *e = kzalloc(sizeof(*e), GFP_KERNEL);
+  // strcpy(e->name, "test.txt");
+  // e->mode = S_IFREG | 0755;
+  // e->ino  = 1001;
+  // list_add(&e->list, &sbi->entries);
+
+  sb->s_fs_info = sbi;
+
+  root_inode = vtfs_get_inode(sb, NULL, S_IFDIR | 0755, 1000);
+  sb->s_root = d_make_root(root_inode);
   if (sb->s_root == NULL) {
-  return -ENOMEM;
+    return -ENOMEM;
   }
-  printk(KERN_INFO "return 0\n");
   return 0;
 }
 

@@ -11,11 +11,13 @@ void vtfs_kill_sb(struct super_block* sb);
 struct inode* vtfs_get_inode(struct super_block* sb, const struct inode* dir, umode_t mode, int i_ino);
 int vtfs_fill_super(struct super_block *sb, void *data, int silent);
 
-// операции с файлами и каталогами
+// операции с каталогами
 struct dentry* vtfs_lookup(
   struct inode* parent_inode,  // родительская нода
   struct dentry* child_dentry, // объект, к которому мы пытаемся получить доступ
   unsigned int flag            // неиспользуемое значение
 );
 
+// операции с файлами
+int vtfs_iterate(struct file *filp, struct dir_context *ctx);
 #endif // VTFS_INIT_H

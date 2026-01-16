@@ -2,6 +2,7 @@
 #include <linux/module.h>
 #include <linux/printk.h>
 #include "vtfs.h"
+#include "fs.h"
 
 #define MODULE_NAME "vtfs"
 
