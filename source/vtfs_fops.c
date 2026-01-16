@@ -66,6 +66,7 @@ ssize_t vtfs_read(struct file *filp, char __user *buf, size_t count, loff_t *ppo
     return -EFAULT;
 
   *ppos += count;
+  inode->i_size = entry->size;
   ret = count;
   return ret;
 }
@@ -101,6 +102,7 @@ ssize_t vtfs_write(
   *ppos += count;
   if (*ppos > entry->size)
     entry->size = *ppos;
+  inode->i_size = entry->size;
 
   return count;
 }

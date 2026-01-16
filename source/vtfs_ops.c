@@ -29,11 +29,13 @@ struct dentry* vtfs_lookup(
           entry->mode,
           entry->ino
         );
+        inode->i_private = entry;
+        inode->i_size = entry->size;
         break;
       }
   }
     if(!inode) {
-      return ERR_PTR(-ENOENT);
+      return NULL;
     }
 
   d_add(child_dentry, inode);
@@ -61,12 +63,15 @@ int vtfs_create(
   strncpy(new_entry->name, child_dentry->d_name.name, MAX_NAME_LEN);
   new_entry->mode = S_IFREG | mode;
   new_entry->ino = GLOB_INODE_COUNTER++;
+  new_entry->data = NULL;
+  new_entry->size = 0;
 
   list_add(&new_entry->list, &sbi->entries);  
 
   inode = vtfs_get_inode(parent_inode->i_sb, parent_inode,
                           new_entry->mode, new_entry->ino);
-  inode->i_private = child_dentry;
+  inode->i_private = new_entry;
+  inode->i_size = 0;
 
   d_add(child_dentry, inode);
 

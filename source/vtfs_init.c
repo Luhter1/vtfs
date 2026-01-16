@@ -42,6 +42,7 @@ struct inode* vtfs_get_inode(
   }
   inode->i_ino = i_ino;
   inode->i_sb  = sb;
+  inode->i_size = 0;
 
   return inode;
 }
