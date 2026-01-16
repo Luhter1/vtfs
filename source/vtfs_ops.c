@@ -11,8 +11,8 @@ struct dentry* vtfs_lookup(
   struct dentry* child_dentry, // объект, к которому мы пытаемся получить доступ
   unsigned int flag            // неиспользуемое значение
 ) {
+  struct vtfs_entry *parent_entry = parent_inode->i_private;
   struct vtfs_entry *entry;
-  struct vtfs_sb_info *sbi = parent_inode->i_sb->s_fs_info;
   const char *name = child_dentry->d_name.name;
   struct inode *inode = NULL;
 
@@ -21,7 +21,11 @@ struct dentry* vtfs_lookup(
   if(!S_ISDIR(parent_inode->i_mode))
     return ERR_PTR(-ENOTDIR);
 
-  list_for_each_entry(entry, &sbi->entries, list){
+  if (!parent_entry)
+    return ERR_PTR(-ENOENT);
+
+  // Поиск в children родительской директории
+  list_for_each_entry(entry, &parent_entry->children, list){
       if(strcmp(entry->name, name) == 0){
         inode = vtfs_get_inode(
           parent_inode->i_sb,
@@ -29,17 +33,16 @@ struct dentry* vtfs_lookup(
           entry->mode,
           entry->ino
         );
+        if (!inode)
+          return ERR_PTR(-ENOMEM);
         inode->i_private = entry;
         inode->i_size = entry->size;
         break;
       }
   }
-    if(!inode) {
-      return NULL;
-    }
 
   d_add(child_dentry, inode);
-  return NULL; // возвращаем NULL, так как файловая система пуста
+  return NULL;
 }
 
 int vtfs_create(
@@ -49,15 +52,18 @@ int vtfs_create(
   umode_t mode,
   bool b
 ) {
-  struct vtfs_sb_info *sbi = parent_inode->i_sb->s_fs_info;
+  struct vtfs_entry *parent_entry = parent_inode->i_private;
   struct vtfs_entry *entry, *new_entry;
   struct inode *inode;
 
   if (!S_ISDIR(parent_inode->i_mode))
     return -ENOTDIR;
 
+  if (!parent_entry)
+    return -ENOENT;
+
   // Проверка на существование файла с таким же именем
-  list_for_each_entry(entry, &sbi->entries, list) {
+  list_for_each_entry(entry, &parent_entry->children, list) {
     if (strcmp(entry->name, child_dentry->d_name.name) == 0)
       return -EEXIST;
   }
@@ -71,10 +77,14 @@ int vtfs_create(
   new_entry->name[MAX_NAME_LEN - 1] = '\0';
   new_entry->mode = S_IFREG | mode;
   new_entry->ino = GLOB_INODE_COUNTER++;
+  new_entry->parent = parent_entry;
   new_entry->data = NULL;
   new_entry->size = 0;
+  new_entry->target = NULL;
+  INIT_LIST_HEAD(&new_entry->children);
+  atomic_set(&new_entry->refcount, 1);
 
-  list_add(&new_entry->list, &sbi->entries);  
+  list_add(&new_entry->list, &parent_entry->children);
 
   inode = vtfs_get_inode(parent_inode->i_sb, parent_inode,
                           new_entry->mode, new_entry->ino);
