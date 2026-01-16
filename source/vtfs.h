@@ -17,7 +17,10 @@ struct dentry* vtfs_lookup(
   struct dentry* child_dentry, // объект, к которому мы пытаемся получить доступ
   unsigned int flag            // неиспользуемое значение
 );
+int vtfs_create(struct mnt_idmap *id, struct inode *parent_inode, struct dentry *child_dentry, umode_t mode, bool b);
 
 // операции с файлами
 int vtfs_iterate(struct file *filp, struct dir_context *ctx);
+ssize_t vtfs_write(struct file *filp, const char __user *buf, size_t count, loff_t *ppos);
+ssize_t vtfs_read(struct file *filp, char __user *buf, size_t count, loff_t *ppos);
 #endif // VTFS_INIT_H

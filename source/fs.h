@@ -4,11 +4,15 @@
 #include <linux/module.h>
 #include <linux/printk.h>
 
+#define MAX_NAME_LEN 255
+
 struct vtfs_entry {
-    char name[500];
+    char name[MAX_NAME_LEN];
     umode_t mode;
     ino_t ino;
     struct list_head list;
+    char *data;
+    size_t size;
 };
 
 struct vtfs_sb_info {

@@ -6,11 +6,18 @@
 
 const struct inode_operations vtfs_inode_ops = {
   .lookup = vtfs_lookup,
+  .create = vtfs_create,
 };
 
 const struct file_operations vtfs_dir_ops = {
   .owner = THIS_MODULE,
   .iterate_shared = vtfs_iterate,
+};
+
+const struct file_operations vtfs_file_ops = {
+  .owner = THIS_MODULE,
+  .read  = vtfs_read,
+  .write = vtfs_write,
 };
 
 // создает новую структуру inode для корня файловой системы
@@ -26,8 +33,13 @@ struct inode* vtfs_get_inode(
 
   inode_init_owner(&nop_mnt_idmap, inode, dir, mode);
 
-  inode->i_op = &vtfs_inode_ops;
-  inode->i_fop = &vtfs_dir_ops;
+  if (S_ISDIR(mode)) {
+      inode->i_op = &vtfs_inode_ops;
+      inode->i_fop = &vtfs_dir_ops;
+  } else if (S_ISREG(mode)) {
+      inode->i_op = NULL;
+      inode->i_fop = &vtfs_file_ops;
+  }
   inode->i_ino = i_ino;
   inode->i_sb  = sb;
 

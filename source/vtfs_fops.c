@@ -47,3 +47,60 @@ int vtfs_iterate(struct file *filp, struct dir_context *ctx) {
 
   return 0;
 }
+
+ssize_t vtfs_read(struct file *filp, char __user *buf, size_t count, loff_t *ppos) {
+  struct inode *inode = file_inode(filp);
+  struct vtfs_entry *entry = inode->i_private;
+  ssize_t ret;
+
+  if (!entry || !entry->data)
+    return 0;
+
+  if (*ppos >= entry->size)
+    return 0;
+
+  if (count > entry->size - *ppos)
+    count = entry->size - *ppos;
+
+  if (copy_to_user(buf, entry->data + *ppos, count))
+    return -EFAULT;
+
+  *ppos += count;
+  ret = count;
+  return ret;
+}
+
+ssize_t vtfs_write(
+  struct file *filp,
+  const char __user *buf,
+  size_t count, 
+  loff_t *ppos
+){
+  struct inode *inode = file_inode(filp);
+  struct vtfs_entry *entry = inode->i_private;
+  char *new_data;
+
+  if (!entry)
+    return -EIO;
+
+
+  if (!entry->data) {
+    entry->data = kzalloc(*ppos + count, GFP_KERNEL);
+    if (!entry->data)
+      return -ENOMEM;
+  } else if (*ppos + count > entry->size) {
+    new_data = krealloc(entry->data, *ppos + count, GFP_KERNEL);
+    if (!new_data)
+      return -ENOMEM;
+    entry->data = new_data;
+  }
+
+  if (copy_from_user(entry->data + *ppos, buf, count))
+    return -EFAULT;
+
+  *ppos += count;
+  if (*ppos > entry->size)
+    entry->size = *ppos;
+
+  return count;
+}
