@@ -7,6 +7,10 @@
 const struct inode_operations vtfs_inode_ops = {
   .lookup = vtfs_lookup,
   .create = vtfs_create,
+  .unlink = vtfs_unlink,
+  .mkdir  = vtfs_mkdir,
+  .rmdir  = vtfs_rmdir,
+  .link   = vtfs_link,
 };
 
 const struct inode_operations vtfs_file_inode_ops = {

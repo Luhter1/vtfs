@@ -57,6 +57,8 @@ ssize_t vtfs_read(struct file *filp, char __user *buf, size_t count, loff_t *ppo
   struct vtfs_entry *entry = inode->i_private;
   ssize_t ret;
 
+  entry = entry->target ? entry->target : entry;
+
   if (!entry || !entry->data)
     return 0;
 
@@ -84,6 +86,8 @@ ssize_t vtfs_write(
   struct inode *inode = file_inode(filp);
   struct vtfs_entry *entry = inode->i_private;
   char *new_data;
+  
+  entry = entry->target ? entry->target : entry;
 
   if (!entry)
     return -EIO;

@@ -10,9 +10,9 @@ struct vtfs_entry {
     char name[MAX_NAME_LEN];
     umode_t mode;
     ino_t ino;
-    struct list_head list;
+    struct list_head list;     // для включения в список детей
     struct vtfs_entry *parent;
-    struct list_head children;
+    struct list_head children; // список детей
     char *data;
     size_t size;
     atomic_t refcount;         // подсчет ссылок на файл
